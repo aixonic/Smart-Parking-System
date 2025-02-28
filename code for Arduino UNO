@@ -1,0 +1,62 @@
+#include <Wire.h>
+#include <LiquidCrystal_I2C.h>
+#include <Servo.h>
+
+#define IR_IN 2    // IR sensor for entry
+#define IR_OUT 3   // IR sensor for exit
+#define SERVO_PIN 9 // Servo motor pin
+
+LiquidCrystal_I2C lcd(0x27, 16, 1); // 16x1 LCD setup
+Servo myServo;
+
+int totalSlots = 4;  // Total parking slots
+int availableSlots = 4;  // Start with all slots empty
+
+void setup() {
+  pinMode(IR_IN, INPUT);
+  pinMode(IR_OUT, INPUT);
+  myServo.attach(SERVO_PIN);
+  lcd.init();
+  lcd.backlight();
+
+  myServo.write(0); // Set servo to 0 degrees initially
+
+  updateDisplay();
+}
+
+void loop() {
+  if (digitalRead(IR_IN) == LOW && availableSlots > 0) { // Vehicle entering
+    availableSlots--; 
+    rotateServo();
+    updateDisplay();
+    delay(4000); // Increased delay to prevent sensor conflict
+  }
+
+  if (digitalRead(IR_OUT) == LOW && availableSlots < totalSlots) { // Vehicle exiting
+    availableSlots++;
+    rotateServo();
+    updateDisplay();
+    delay(4000); // Increased delay to prevent sensor conflict
+  }
+}
+
+// Function to rotate servo for entry & exit
+void rotateServo() {
+  myServo.write(100);
+  delay(1500);
+  myServo.write(0);
+}
+
+// Function to update LCD display
+void updateDisplay() {
+  lcd.clear();
+  lcd.setCursor(0, 0);
+
+  if (availableSlots == 0) {
+    lcd.print("PARKING");
+    lcd.println(" FULL ");  // Shortened message for better fit
+  } else {
+    lcd.print("Slots: "); 
+    lcd.print(availableSlots); // Displays only the number of slots left
+  }
+}
